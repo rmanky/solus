@@ -1,0 +1,29 @@
+[package]
+name = "diffusion-bot-rust"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "diffusion-bot-rust"
+path = "src/main.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-trait = "0.1.59"
+base64 = "0.20.0"
+dotenv = "0.15.0"
+futures = "0.3.25"
+rand = "0.8.5"
+reqwest = { version = "0.12.7", default-features = false, features = ["json", "rustls-tls", "blocking", "stream", "multipart"] }
+serde = "1.0.149"
+serde_json = "1.0.89"
+tokio = { version = "1.23.0", features = ["full"] }
+twilight-cache-inmemory = "0.14.0"
+twilight-gateway = "0.14.0"
+twilight-http = "0.14.0"
+twilight-interactions = "0.14.2"
+twilight-model = "0.14.0"
+twilight-util = { version = "0.14.0", features = ["builder"] }
+solus_rust = { path = "../solus_rust" }
+tokio-stream = "0.1.16"

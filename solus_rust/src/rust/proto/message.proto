@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package proto.message;
+
+message GeminiRequestPb {
+  repeated ContentPb contents = 1;
+  repeated ToolPb tools = 2;
+  SystemInstructionPb system_instruction = 3;
+}
+
+message SystemInstructionPb {
+  repeated PartPb parts = 1;
+}
+
+message GeminiResponsePb {
+  repeated CandidatePb candidates = 1;
+}
+
+message ContentPb {
+  string role = 1;
+  repeated PartPb parts = 2;
+}
+
+message PartPb {
+  optional string text = 1;
+  optional FunctionCallPb function_call = 2;
+  optional FunctionResponsePb function_response = 3;
+}
+
+message FunctionCallPb {
+  string name = 1;
+  map<string, string> args = 2;
+}
+
+message CandidatePb {
+  ContentPb content = 1;
+  optional string finish_reason = 2;
+}
+
+message ToolPb {
+  repeated FunctionDeclarationPb function_declarations = 1;
+}
+
+message FunctionDeclarationPb {
+  string name = 1;
+  string description = 2;
+  FunctionParametersPb parameters = 3;
+}
+
+message FunctionParametersPb {
+  string type = 1;
+  map<string, FunctionParameterPb> properties = 2;
+  repeated string required = 3;
+}
+
+message FunctionParameterPb {
+  string type = 1;
+  string description = 2;
+}
+
+message FunctionResponsePb {
+  string name = 1;
+  string response = 2;
+}
