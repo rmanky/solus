@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::iter::Map;
 use std::sync::Arc;
 use async_trait::async_trait;
 use serde::Deserialize;
@@ -11,8 +10,7 @@ use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::StreamExt;
 use twilight_http::client::InteractionClient;
 use twilight_interactions::command::{ CommandModel, CreateCommand };
-use twilight_model::channel::message::component::{ ActionRow, Button, ButtonStyle };
-use twilight_model::channel::message::{ Component, Embed };
+use twilight_model::channel::message::Embed;
 use twilight_model::http::interaction::{
     InteractionResponse,
     InteractionResponseData,
@@ -20,11 +18,9 @@ use twilight_model::http::interaction::{
 };
 use twilight_model::id::marker::InteractionMarker;
 use twilight_model::id::Id;
-use twilight_util::builder;
 use twilight_util::builder::embed::{
     EmbedBuilder,
     EmbedFieldBuilder,
-    EmbedFooterBuilder,
     ImageSource,
 };
 
