@@ -18,11 +18,7 @@ use twilight_model::http::interaction::{
 };
 use twilight_model::id::marker::InteractionMarker;
 use twilight_model::id::Id;
-use twilight_util::builder::embed::{
-    EmbedBuilder,
-    EmbedFieldBuilder,
-    ImageSource,
-};
+use twilight_util::builder::embed::{ EmbedBuilder, EmbedFieldBuilder, ImageSource };
 
 use super::{ CommandHandler, CommandHandlerData };
 
@@ -144,62 +140,69 @@ async fn chat(
     let mut entries: Vec<EmbedEntry> = vec![];
 
     while let Some(message) = outer_receiver.next().await {
-        let part = match message.candidates[0].content.as_ref() {
-            Some(content) => &content.parts[0],
+        println!("{:?}", message);
+        let parts = match message.candidates[0].content.as_ref() {
+            Some(content) => &content.parts,
             None => {
                 continue;
             }
         };
 
-        if let Some(text) = &part.text {
-            if let Some(last_entry) = entries.last_mut() {
-                if let Some(last_text) = &mut last_entry.text {
-                    last_text.push_str(text);
+        for part in parts {
+            if let Some(text) = &part.text {
+                if !text.is_empty() {
+                    if let Some(last_entry) = entries.last_mut() {
+                        if let Some(last_text) = &mut last_entry.text {
+                            last_text.push_str(text);
+                        } else {
+                            // Previous entry had no text, so add a new one
+                            entries.push(EmbedEntry {
+                                text: Some(text.clone()),
+                                image: None,
+                                function_call: None,
+                            });
+                        }
+                    } else {
+                        // No entries yet, add the first one
+                        entries.push(EmbedEntry {
+                            text: part.text.clone(),
+                            image: None,
+                            function_call: None,
+                        });
+                    }
                 } else {
-                    // Previous entry had no text, so add a new one
-                    entries.push(EmbedEntry {
-                        text: Some(text.clone()),
-                        image: None,
-                        function_call: None,
-                    });
+                    println!("Solus: empty text part!");
+                }
+            } else if let Some(function_call) = &part.function_call {
+                let function_name = &function_call.name;
+                let function_args = &function_call.args;
+                entries.push(EmbedEntry {
+                    text: None,
+                    image: None,
+                    function_call: Some(EmbedFunctionCall {
+                        name: function_name.to_string(),
+                        args: function_args.clone(),
+                    }),
+                });
+            } else if let Some(function_response) = &part.function_response {
+                match function_response.name.as_str() {
+                    "generate_image" => {
+                        let image_url = &function_response.response;
+                        entries.push(EmbedEntry {
+                            text: None,
+                            image: Some(image_url.clone()),
+                            function_call: None,
+                        });
+                    }
+                    _ => {
+                        // Handle
+                    }
                 }
             } else {
-                // No entries yet, add the first one
-                entries.push(EmbedEntry {
-                    text: part.text.clone(),
-                    image: None,
-                    function_call: None,
+                return Err(ChatError {
+                    message: "Part has no text, function_call or function_response".into(),
                 });
             }
-        } else if let Some(function_call) = &part.function_call {
-            let function_name = &function_call.name;
-            let function_args = &function_call.args;
-            entries.push(EmbedEntry {
-                text: None,
-                image: None,
-                function_call: Some(EmbedFunctionCall {
-                    name: function_name.to_string(),
-                    args: function_args.clone(),
-                }),
-            });
-        } else if let Some(function_response) = &part.function_response {
-            match function_response.name.as_str() {
-                "generate_image" => {
-                    let image_url = &function_response.response;
-                    entries.push(EmbedEntry {
-                        text: None,
-                        image: Some(image_url.clone()),
-                        function_call: None,
-                    });
-                }
-                _ => {
-                    // Handle
-                }
-            }
-        } else {
-            return Err(ChatError {
-                message: "Part has no text, function_call or function_response".into(),
-            });
         }
 
         let mut embeds = entries_to_embed(&entries);

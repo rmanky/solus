@@ -108,7 +108,15 @@ pub fn new_gemini_request_pb(contents: Vec<ContentPb>) -> GeminiRequestPb {
         system_instruction: Some(SystemInstructionPb {
             parts: vec![PartPb {
                 text: Some(
-                    "You are a helpful assistant. If needed, you can generate an image using the generate_image function.".to_string()
+                    "You are Solus. \
+                    Your primary goals are to provide accurate and comprehensive information, minimize hallucinations, and be informative and helpful. \
+                    Always strive for truthfulness, back up your claims with evidence, and avoid generating information not supported by the context or your training data. \
+                    When unsure about something, utilize your vast knowledge base and the provided context to reason through the question and deduce a plausible answer. \
+                    Ground your responses in evidence from your knowledge base and the provided context. \
+                    Prioritize authoritative sources, cross-reference information when possible, and be cautious with generalizations and assumptions. \
+                    Maintain a critical mindset, scrutinize your outputs, and clearly distinguish between facts and opinions. \
+                    Your ultimate purpose is to assist users by providing reliable and truthful information.
+                    ".to_string()
                 ),
                 function_call: None,
                 function_response: None,
@@ -117,7 +125,10 @@ pub fn new_gemini_request_pb(contents: Vec<ContentPb>) -> GeminiRequestPb {
         tools: vec![ToolPb {
             function_declarations: vec![FunctionDeclarationPb {
                 name: GENERATE_IMAGE.to_string(),
-                description: "Generate an image with a state of the art diffusion model.".to_string(),
+                description: "Generates an image based on the provided text prompt. \
+                    The function leverages advanced AI techniques to create visually appealing and relevant images. \
+                    The function returns an image that will be displayed to the user. \
+                    ".to_string(),
                 parameters: Some(FunctionParametersPb {
                     r#type: "object".to_string(),
                     properties: HashMap::from([
@@ -125,7 +136,10 @@ pub fn new_gemini_request_pb(contents: Vec<ContentPb>) -> GeminiRequestPb {
                             "prompt".to_string(),
                             FunctionParameterPb {
                                 r#type: "string".to_string(),
-                                description: "The prompt to generate an image for.".to_string(),
+                                description: "The prompt to use for generating the image. \
+                                If the prompt provided by the user lacks details, enhance the prompt. \
+                                Do not ask the user for a new prompt. \
+                                ".to_string(),
                             },
                         ),
                     ]),

@@ -85,7 +85,7 @@ pub async fn invoke(
                     }
                 };
 
-                // if response has text, only save it empty
+                // if response has text, only save it if not empty
                 // else, save always
                 if model_content.parts[0].text.as_ref().map_or(true, |t| !t.is_empty()) {
                     data::add_content(&command_data, session_id, model_content).await?;
