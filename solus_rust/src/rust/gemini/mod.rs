@@ -1,6 +1,6 @@
 pub mod api;
 
-use anyhow::Result;
+use anyhow::{ bail, Result };
 use api::{
     Candidate,
     Content,
@@ -70,14 +70,10 @@ pub async fn invoke(
     let mut es = EventSource::new(request_builder)?;
     while let Some(event) = es.next().await {
         match event {
-            Ok(Event::Open) => println!("Gemini: connection open!"),
             Ok(Event::Message(message)) => {
                 let gemini_response: GeminiResponse = match serde_json::from_str(&message.data) {
                     Ok(v) => v,
-                    Err(e) => {
-                        println!("Gemini: error {}", e);
-                        todo!("Handle error")
-                    }
+                    Err(e) => { bail!("GeminiResponse: {}", e) }
                 };
 
                 let gemini_response_pb = pb_from_gemini_response(&gemini_response);
@@ -85,7 +81,6 @@ pub async fn invoke(
                 let model_content = match &gemini_response_pb.candidates[0].content {
                     Some(content) => content,
                     None => {
-                        println!("Gemini: no content");
                         continue;
                     }
                 };
@@ -100,11 +95,12 @@ pub async fn invoke(
             }
             Err(err) => {
                 match err {
-                    StreamEnded => println!("Gemini: stream ended"),
-                    _ => println!("Gemini: error {}", err),
+                    StreamEnded => {}
+                    _ => bail!("EventSource: {}", err),
                 }
                 es.close();
             }
+            _ => {}
         }
     }
 

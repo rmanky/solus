@@ -62,7 +62,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let mut outer_receiver = UnboundedReceiverStream::new(outer_rx);
 
         while let Some(message) = outer_receiver.next().await {
-            println!("Bin: {:?}", message);
+            println!("{:?}", message);
         }
 
         let _ = handle.await?;

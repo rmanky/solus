@@ -13,11 +13,11 @@ pub mod proto;
 pub fn get_connection() -> Connection {
     match Connection::open("./history.db3") {
         Ok(conn) => {
-            println!("Connected to database.");
+            println!("Database connection established.");
             conn
         }
         Err(e) => {
-            panic!("Failed to connect to database: {}", e);
+            panic!("Database connection FAILED! {}", e);
         }
     }
 }

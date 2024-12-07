@@ -29,8 +29,6 @@ pub async fn generate_image(command_data: Arc<CommandData>, prompt: String) -> R
         .json(&body)
         .send().await?;
 
-    println!("{:?}", response);
-
     let replicate_response: ReplicateResponse = response.json().await?;
 
     let image_url = replicate_response.output.first();
