@@ -9,7 +9,7 @@ use crate::proto::message::{
     GeminiResponsePb,
     PartPb,
 };
-use anyhow::{ anyhow, bail, Result };
+use anyhow::{ bail, Result };
 use tokio::sync::mpsc::{ self, UnboundedSender };
 use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::StreamExt;
