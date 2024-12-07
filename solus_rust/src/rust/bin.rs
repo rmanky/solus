@@ -18,11 +18,11 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let connection = match Connection::open_in_memory() {
         Ok(conn) => {
-            println!("Connected to database.");
+            println!("Database connection established.");
             conn
         }
         Err(e) => {
-            panic!("Failed to connect to database: {}", e);
+            panic!("Database connection FAILED! {}", e);
         }
     };
 
@@ -55,17 +55,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let command_data_clone = command_data.clone();
         let session_id = session_id.clone();
 
-        tokio::spawn(async move {
-            let result = composer::invoker(
-                command_data_clone,
-                session_id,
-                gemini_request,
-                outer_tx
-            ).await;
-
-            if let Err(e) = result {
-                println!("Error: {}", e);
-            }
+        let handle = tokio::spawn(async move {
+            composer::invoker(command_data_clone, session_id, gemini_request, outer_tx).await.ok()
         });
 
         let mut outer_receiver = UnboundedReceiverStream::new(outer_rx);
@@ -73,7 +64,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         while let Some(message) = outer_receiver.next().await {
             println!("Bin: {:?}", message);
         }
-    }
 
-    Ok(())
+        let _ = handle.await?;
+    }
 }

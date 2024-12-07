@@ -1,6 +1,7 @@
 use crate::proto::message::ContentPb;
+use anyhow::Result;
 use reqwest::Client;
-use rusqlite::{ params, Connection, Result };
+use rusqlite::{ params, Connection };
 use tokio::sync::Mutex;
 use uuid::Uuid;
 use prost::Message;
@@ -67,7 +68,7 @@ pub async fn add_content(
     command_data: &CommandData,
     session_id: &str,
     content: &ContentPb
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<()> {
     let connection = &command_data.connection.lock().await;
     let message_id = Uuid::new_v4().to_string();
 

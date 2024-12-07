@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::{ bail, Result };
 use reqwest::header;
 use serde::{ Deserialize, Serialize };
 use serde_json::json;
@@ -11,10 +12,7 @@ struct ReplicateResponse {
     output: Vec<String>,
 }
 
-pub async fn generate_image(
-    command_data: Arc<CommandData>,
-    prompt: String
-) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn generate_image(command_data: Arc<CommandData>, prompt: String) -> Result<String> {
     let reqwest_client = &command_data.reqwest_client;
     let replicate_token = &command_data.replicate_token;
     let body = json!({
@@ -31,12 +29,14 @@ pub async fn generate_image(
         .json(&body)
         .send().await?;
 
+    println!("{:?}", response);
+
     let replicate_response: ReplicateResponse = response.json().await?;
 
     let image_url = replicate_response.output.first();
 
     match image_url {
         Some(url) => Ok(url.to_string()),
-        None => Err("No image url found".into()),
+        None => bail!("Did not receive image_url from response."),
     }
 }

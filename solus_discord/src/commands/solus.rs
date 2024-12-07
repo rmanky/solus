@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+use std::iter::Map;
 use std::sync::Arc;
 use async_trait::async_trait;
 use serde::Deserialize;
@@ -9,7 +11,8 @@ use tokio_stream::wrappers::UnboundedReceiverStream;
 use tokio_stream::StreamExt;
 use twilight_http::client::InteractionClient;
 use twilight_interactions::command::{ CommandModel, CreateCommand };
-use twilight_model::channel::message::Embed;
+use twilight_model::channel::message::component::{ ActionRow, Button, ButtonStyle };
+use twilight_model::channel::message::{ Component, Embed };
 use twilight_model::http::interaction::{
     InteractionResponse,
     InteractionResponseData,
@@ -17,6 +20,7 @@ use twilight_model::http::interaction::{
 };
 use twilight_model::id::marker::InteractionMarker;
 use twilight_model::id::Id;
+use twilight_util::builder;
 use twilight_util::builder::embed::{
     EmbedBuilder,
     EmbedFieldBuilder,
@@ -37,6 +41,13 @@ pub struct SolusCommand {
 struct EmbedEntry {
     text: Option<String>,
     image: Option<String>,
+    function_call: Option<EmbedFunctionCall>,
+}
+
+#[derive(Deserialize, Debug)]
+struct EmbedFunctionCall {
+    name: String,
+    args: HashMap<String, String>,
 }
 
 #[async_trait]
@@ -88,7 +99,7 @@ impl CommandHandler for SolusCommand {
             .embeds(
                 Some(
                     &[
-                        prompt_embed(prompt, "UNKNOWN"),
+                        prompt_embed(prompt),
                         EmbedBuilder::new()
                             .title("Failed")
                             .color(0xe53935)
@@ -126,18 +137,11 @@ async fn chat(
         }
     };
 
-    let handle = tokio::spawn(async move {
-        let result = composer::invoker(
-            solus_command_data.clone(),
-            session_id,
-            gemini_request,
-            outer_tx
-        ).await;
-
-        if let Err(e) = result {
-            println!("Error: {}", e);
-        }
-    });
+    let handle = tokio::spawn(async move { composer
+            ::invoker(solus_command_data.clone(), session_id, gemini_request, outer_tx).await
+            .map_err(|e| ChatError {
+                message: format!("Invocation on thread failed: {}", e),
+            }) });
 
     let mut outer_receiver = UnboundedReceiverStream::new(outer_rx);
 
@@ -160,6 +164,7 @@ async fn chat(
                     entries.push(EmbedEntry {
                         text: Some(text.clone()),
                         image: None,
+                        function_call: None,
                     });
                 }
             } else {
@@ -167,14 +172,19 @@ async fn chat(
                 entries.push(EmbedEntry {
                     text: part.text.clone(),
                     image: None,
+                    function_call: None,
                 });
             }
         } else if let Some(function_call) = &part.function_call {
             let function_name = &function_call.name;
             let function_args = &function_call.args;
             entries.push(EmbedEntry {
-                text: format!("{}({:?})", function_name, function_args).into(),
+                text: None,
                 image: None,
+                function_call: Some(EmbedFunctionCall {
+                    name: function_name.to_string(),
+                    args: function_args.clone(),
+                }),
             });
         } else if let Some(function_response) = &part.function_response {
             match function_response.name.as_str() {
@@ -183,6 +193,7 @@ async fn chat(
                     entries.push(EmbedEntry {
                         text: None,
                         image: Some(image_url.clone()),
+                        function_call: None,
                     });
                 }
                 _ => {
@@ -197,51 +208,73 @@ async fn chat(
 
         let mut embeds = entries_to_embed(&entries);
         // add prompt_embed to the beginning
-        embeds.insert(0, prompt_embed(prompt, interaction_token));
+        embeds.insert(0, prompt_embed(prompt));
 
         interaction_client
             .update_response(interaction_token)
             .embeds(Some(&embeds))
             .unwrap().await
             .ok();
-
-        println!("Bin: {:?}", message);
     }
 
-    let _ = handle.await;
-
-    Ok(())
+    handle.await.map_err(|e| ChatError {
+        message: format!("Failed to await thread handle: {}", e),
+    })?
 }
 
-fn prompt_embed(prompt: &str, id: &str) -> Embed {
+fn prompt_embed(prompt: &str) -> Embed {
+    EmbedBuilder::new().title("Prompt").color(0xf7f0f0).description(prompt).build()
+}
+
+fn response_embed(prompt: &str) -> Embed {
+    EmbedBuilder::new().title("Response").color(0x8af3ff).description(prompt).build()
+}
+
+fn function_call_embed(function_call: &EmbedFunctionCall) -> Embed {
     EmbedBuilder::new()
-        .title("Prompt")
-        .color(0x43a047)
-        .description(prompt)
-        .footer(EmbedFooterBuilder::new(id))
+        .title("Function Call")
+        .color(0x18a999)
+        .description(
+            format!(
+                "```{}({})```",
+                function_call.name,
+                function_call.args
+                    .iter()
+                    .map(|(l, r)| format!("{}=\"{}\"", l, r))
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            )
+        )
         .build()
+}
+
+fn image_embed(image_url: &str) -> Embed {
+    let mut builder = EmbedBuilder::new().title("Function Response").color(0x109648);
+    let image_source = ImageSource::url(image_url);
+    match image_source {
+        Ok(image_source) => {
+            builder = builder.image(image_source);
+        }
+        Err(e) => {
+            builder = builder.description(format!("ERROR!: {}", e));
+        }
+    }
+    builder.build()
 }
 
 fn entries_to_embed(entries: &Vec<EmbedEntry>) -> Vec<Embed> {
     entries
         .iter()
-        .map(|entry| {
-            let mut builder = EmbedBuilder::new();
+        .filter_map(|entry| {
             if let Some(text) = &entry.text {
-                builder = builder.description(text);
+                if !text.is_empty() { Some(response_embed(text)) } else { None }
+            } else if let Some(image_url) = &entry.image {
+                Some(image_embed(image_url))
+            } else if let Some(function_call) = &entry.function_call {
+                Some(function_call_embed(function_call))
+            } else {
+                None
             }
-            if let Some(image) = &entry.image {
-                let image_source = ImageSource::url(image);
-                match image_source {
-                    Ok(image_source) => {
-                        builder = builder.image(image_source);
-                    }
-                    Err(e) => {
-                        // TODO: Handle error
-                    }
-                }
-            }
-            builder.build()
         })
         .collect()
 }

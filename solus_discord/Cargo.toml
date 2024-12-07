@@ -27,3 +27,4 @@ twilight-model = "0.14.0"
 twilight-util = { version = "0.14.0", features = ["builder"] }
 solus_rust = { path = "../solus_rust" }
 tokio-stream = "0.1.16"
+anyhow = "1.0.94"

@@ -104,7 +104,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     // Since we only care about messages, make the cache only process messages.
     let cache = InMemoryCache::builder().resource_types(ResourceType::MESSAGE).build();
 
-    solus_rust_lib::setup_database(solus_command_data.clone()).await;
+    solus_rust_lib::setup_database(solus_command_data.clone()).await?;
 
     // Startup an event loop to process each event in the event stream as they
     // come in.

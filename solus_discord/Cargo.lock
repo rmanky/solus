@@ -72,9 +72,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.93"
+version = "1.0.94"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c95c10ba0b00a02636238b814946408b1322d5ac4760326e6fb8ec956d85775"
+checksum = "c1fd03a028ef38ba2276dce7e33fcd6369c158a1bca17946c4b1b701891c1ff7"
 
 [[package]]
 name = "async-channel"
@@ -446,6 +446,7 @@ dependencies = [
 name = "diffusion-bot-rust"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "base64 0.20.0",
  "dotenv",
@@ -2072,6 +2073,7 @@ name = "solus_rust"
 version = "0.1.0"
 dependencies = [
  "android_logger",
+ "anyhow",
  "async-std",
  "backtrace",
  "byteorder",

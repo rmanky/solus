@@ -1,5 +1,6 @@
 pub mod api;
 
+use anyhow::Result;
 use api::{
     Candidate,
     Content,
@@ -41,7 +42,7 @@ pub async fn invoke(
     session_id: &String,
     gemini_request_pb: &GeminiRequestPb,
     sender: UnboundedSender<GeminiResponsePb>
-) -> Result<String, Box<dyn std::error::Error>> {
+) -> Result<()> {
     let url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key={}",
         &command_data.gemini_token
@@ -107,7 +108,7 @@ pub async fn invoke(
         }
     }
 
-    Ok("done".to_string())
+    Ok(())
 }
 
 // Don't need this?

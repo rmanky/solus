@@ -11,12 +11,6 @@ use twilight_model::{
     id::{ marker::{ ApplicationMarker, InteractionMarker }, Id },
 };
 
-use self::info::InfoCommand;
-
-// mod chat;
-// mod dream;
-// mod horde;
-mod info;
 mod solus;
 
 pub struct CommandHandlerData<'a> {
@@ -53,15 +47,7 @@ pub trait CommandDelegate {
 #[async_trait]
 impl CommandDelegate for CommandDelegateData {
     fn command_definitions(&self) -> Vec<Command> {
-        [
-            // HordeCommand::create_command(),
-            // DreamCommand::create_command(),
-            InfoCommand::create_command(),
-            // ChatCommand::create_command(),
-            SolusCommand::create_command(),
-        ]
-            .map(std::convert::Into::into)
-            .to_vec()
+        [SolusCommand::create_command()].map(std::convert::Into::into).to_vec()
     }
 
     async fn handle_interaction(
@@ -109,50 +95,6 @@ impl CommandDelegate for CommandDelegateData {
                         ).await
                     }
                 }
-                // "horde" => {
-                //     if
-                //         let Ok(horde_command) = HordeCommand::from_interaction(
-                //             (*command_data).into()
-                //         )
-                //     {
-                //         horde_command.handle_command(
-                //             command_handler_data,
-                //             interaction.id,
-                //             &interaction.token
-                //         ).await
-                //     }
-                // }
-                // "dream" => {
-                //     if
-                //         let Ok(dream_command) = DreamCommand::from_interaction(
-                //             (*command_data).into()
-                //         )
-                //     {
-                //         dream_command.handle_command(
-                //             command_handler_data,
-                //             interaction.id,
-                //             &interaction.token
-                //         ).await
-                //     }
-                // }
-                // "info" => {
-                //     if let Ok(info_command) = InfoCommand::from_interaction((*command_data).into()) {
-                //         info_command.handle_command(
-                //             command_handler_data,
-                //             interaction.id,
-                //             &interaction.token
-                //         ).await
-                //     }
-                // }
-                // "chat" => {
-                //     if let Ok(chat_command) = ChatCommand::from_interaction((*command_data).into()) {
-                //         chat_command.handle_command(
-                //             command_handler_data,
-                //             interaction.id,
-                //             &interaction.token
-                //         ).await
-                //     }
-                // }
                 &_ => {}
             }
         }

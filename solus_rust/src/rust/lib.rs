@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use anyhow::Result;
 use data::CommandData;
 use rusqlite::Connection;
 
@@ -10,7 +11,7 @@ pub mod flux;
 pub mod proto;
 
 pub fn get_connection() -> Connection {
-    match Connection::open_in_memory() {
+    match Connection::open("./history.db3") {
         Ok(conn) => {
             println!("Connected to database.");
             conn
@@ -25,14 +26,10 @@ pub fn get_client() -> reqwest::Client {
     reqwest::Client::new()
 }
 
-pub async fn setup_database(command_data: Arc<CommandData>) {
-    let _ = data::setup(&command_data).await;
+pub async fn setup_database(command_data: Arc<CommandData>) -> Result<()> {
+    data::setup(&command_data).await
 }
 
-pub async fn create_session(
-    command_data: Arc<CommandData>
-) -> Result<String, Box<dyn std::error::Error>> {
-    let session_id = data::create_session(&command_data).await?;
-
-    Ok(session_id)
+pub async fn create_session(command_data: Arc<CommandData>) -> Result<String> {
+    data::create_session(&command_data).await
 }
