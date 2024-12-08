@@ -33,3 +33,7 @@ pub async fn setup_database(command_data: Arc<CommandData>) -> Result<()> {
 pub async fn create_session(command_data: Arc<CommandData>) -> Result<String> {
     data::create_session(&command_data).await
 }
+
+pub async fn get_or_create_session(command_data: Arc<CommandData>, id: String) -> Result<String> {
+    data::get_or_create_session(&command_data, id).await
+}

@@ -1,7 +1,7 @@
 use crate::proto::message::ContentPb;
 use anyhow::Result;
 use reqwest::Client;
-use rusqlite::{ params, Connection };
+use rusqlite::{ params, Connection, OptionalExtension };
 use tokio::sync::Mutex;
 use uuid::Uuid;
 use prost::Message;
@@ -43,6 +43,24 @@ pub async fn create_session(command_data: &CommandData) -> Result<String> {
     conn.execute("INSERT INTO ChatSessions (id) VALUES (?1)", params![id])?;
 
     Ok(id)
+}
+
+pub async fn get_or_create_session(command_data: &CommandData, id: String) -> Result<String> {
+    let conn = &command_data.connection.lock().await;
+
+    // Check if a session with the given ID already exists
+    let existing_session: Option<String> = conn
+        .query_row("SELECT id FROM ChatSessions WHERE id = ?1", params![id], |row| row.get(0))
+        .optional()?;
+
+    if let Some(existing_id) = existing_session {
+        // Session already exists, return the existing ID
+        Ok(existing_id)
+    } else {
+        // Session does not exist, create a new one
+        conn.execute("INSERT INTO ChatSessions (id) VALUES (?1)", params![id])?;
+        Ok(id)
+    }
 }
 
 pub async fn get_content(command_data: &CommandData, session_id: &str) -> Result<Vec<ContentPb>> {

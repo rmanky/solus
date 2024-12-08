@@ -18,7 +18,7 @@ use twilight_model::http::interaction::{
 };
 use twilight_model::id::marker::InteractionMarker;
 use twilight_model::id::Id;
-use twilight_util::builder::embed::{ EmbedBuilder, EmbedFieldBuilder, ImageSource };
+use twilight_util::builder::embed::{ EmbedBuilder, ImageSource };
 
 use super::{ CommandHandler, CommandHandlerData };
 
@@ -42,6 +42,10 @@ struct EmbedFunctionCall {
     args: HashMap<String, String>,
 }
 
+struct ChatError {
+    message: String,
+}
+
 #[async_trait]
 impl CommandHandler for SolusCommand {
     async fn handle_command(
@@ -50,10 +54,10 @@ impl CommandHandler for SolusCommand {
         interaction_id: Id<InteractionMarker>,
         interaction_token: &'_ str
     ) {
+        let prompt = &self.prompt;
         let interaction_client = command_handler_data.interaction_client;
         let solus_command_data = command_handler_data.solus_command_data;
-
-        let prompt = &self.prompt;
+        let channel_id = command_handler_data.channel.id.get().to_string();
 
         interaction_client
             .create_response(
@@ -62,65 +66,62 @@ impl CommandHandler for SolusCommand {
                 &(InteractionResponse {
                     kind: InteractionResponseType::ChannelMessageWithSource,
                     data: Some(InteractionResponseData {
-                        embeds: Some(
-                            vec![
-                                EmbedBuilder::new()
-                                    .title("Chatting")
-                                    .color(0x673ab7)
-                                    .field(EmbedFieldBuilder::new("Prompt", prompt))
-                                    .build()
-                            ]
-                        ),
+                        embeds: Some(vec![prompt_embed(prompt)]),
                         ..Default::default()
                     }),
                 })
             ).await
             .ok();
 
-        let e = match
-            chat(prompt, solus_command_data, &interaction_client, interaction_token).await
+        match
+            chat(
+                prompt,
+                channel_id,
+                solus_command_data,
+                &interaction_client,
+                interaction_token
+            ).await
         {
             Ok(_) => {
                 return;
             }
-            Err(e) => e,
-        };
-
-        interaction_client
-            .update_response(interaction_token)
-            .embeds(
-                Some(
-                    &[
-                        prompt_embed(prompt),
-                        EmbedBuilder::new()
-                            .title("Failed")
-                            .color(0xe53935)
-                            .description(format!("```\n{}\n```", e.message))
-                            .build(),
-                    ]
-                )
-            )
-            .unwrap().await
-            .ok();
+            Err(e) => {
+                let _ = interaction_client
+                    .update_response(interaction_token)
+                    .embeds(
+                        Some(
+                            &[
+                                prompt_embed(prompt),
+                                EmbedBuilder::new()
+                                    .title("Failed")
+                                    .color(0xe53935)
+                                    .description(format!("```\n{}\n```", e.message))
+                                    .build(),
+                            ]
+                        )
+                    )
+                    .unwrap().await
+                    .ok();
+            }
+        }
     }
-}
-
-struct ChatError {
-    message: String,
 }
 
 async fn chat(
     prompt: &str,
+    channel_id: String,
     solus_command_data: Arc<SolusCommandData>,
     interaction_client: &InteractionClient<'_>,
-    interaction_token: &str
+    interaction_token: &'_ str
 ) -> Result<(), ChatError> {
     let content = new_content_pb("user".into(), prompt.into());
     let gemini_request = new_gemini_request_pb(vec![content]);
 
     let (outer_tx, outer_rx) = mpsc::unbounded_channel(); // Create a bounded channel
 
-    let session_id = match solus_rust_lib::create_session(solus_command_data.clone()).await {
+    let session_id = match
+        solus_rust_lib::get_or_create_session(solus_command_data.clone(), channel_id).await
+    {
         Ok(session_id) => Arc::new(session_id),
         Err(e) => {
             return Err(ChatError {
@@ -222,7 +223,7 @@ async fn chat(
 }
 
 fn prompt_embed(prompt: &str) -> Embed {
-    EmbedBuilder::new().title("Prompt").color(0xf7f0f0).description(prompt).build()
+    EmbedBuilder::new().title("Prompt").color(0xe2a0ff).description(prompt).build()
 }
 
 fn response_embed(prompt: &str) -> Embed {
