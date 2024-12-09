@@ -1,13 +1,17 @@
 use std::sync::Arc;
 
-use crate::proto::message::{
-    CandidatePb,
-    ContentPb,
-    FunctionCallPb,
-    FunctionResponsePb,
-    GeminiRequestPb,
-    GeminiResponsePb,
-    PartPb,
+use crate::{
+    brave::brave_search,
+    gemini::api::BRAVE_SEARCH,
+    proto::message::{
+        CandidatePb,
+        ContentPb,
+        FunctionCallPb,
+        FunctionResponsePb,
+        GeminiRequestPb,
+        GeminiResponsePb,
+        PartPb,
+    },
 };
 use anyhow::{ bail, Result };
 use tokio::sync::mpsc::{ self, UnboundedSender };
@@ -80,6 +84,13 @@ pub async fn handle_function_call(
             match prompt {
                 Some(prompt) => generate_image(command_data, prompt.into()).await,
                 None => { bail!("Prompt was not supplied to generate_image call.") }
+            }
+        }
+        BRAVE_SEARCH => {
+            let query = function_call.args.get("query");
+            match query {
+                Some(query) => brave_search(command_data, query.into()).await,
+                None => { bail!("Query was not supplied to web_search call.") }
             }
         }
         _ => { bail!("Function call not supported.") }

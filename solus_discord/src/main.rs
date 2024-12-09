@@ -84,6 +84,7 @@ async fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
         connection: Mutex::new(connection),
         replicate_token: env::var("REPLICATE_TOKEN").expect("REPLICATE_TOKEN must be set."),
         gemini_token: env::var("GEMINI_TOKEN").expect("GEMINI_TOKEN must be set."),
+        brave_token: env::var("BRAVE_TOKEN").expect("BRAVE_TOKEN must be set."),
     });
 
     let command_data = Arc::new(CommandDelegateData {

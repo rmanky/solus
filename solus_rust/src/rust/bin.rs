@@ -3,17 +3,19 @@ mod gemini;
 mod composer;
 mod flux;
 mod proto;
+mod brave;
 
+use anyhow::{ bail, Result };
 use data::CommandData;
 use dotenv::dotenv;
 use gemini::api::{ new_content_pb, new_gemini_request_pb };
 use rusqlite::Connection;
 use tokio::sync::{ mpsc, Mutex };
-use std::{ env, error::Error, io, sync::Arc };
+use std::{ env, io, sync::Arc };
 use tokio_stream::{ wrappers::UnboundedReceiverStream, StreamExt };
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<()> {
     dotenv().ok();
 
     let connection = match Connection::open_in_memory() {
@@ -31,6 +33,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         connection: Mutex::new(connection),
         replicate_token: env::var("REPLICATE_TOKEN").expect("REPLICATE_TOKEN must be set."),
         gemini_token: env::var("GEMINI_TOKEN").expect("GEMINI_TOKEN must be set."),
+        brave_token: env::var("BRAVE_TOKEN").expect("BRAVE_TOKEN must be set."),
     });
 
     data::setup(&command_data).await?;
@@ -56,7 +59,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
         let session_id = session_id.clone();
 
         let handle = tokio::spawn(async move {
-            composer::invoker(command_data_clone, session_id, gemini_request, outer_tx).await.ok()
+            let e = composer::invoker(
+                command_data_clone,
+                session_id,
+                gemini_request,
+                outer_tx
+            ).await;
+
+            if e.is_err() {
+                panic!("{:?}", e);
+            }
         });
 
         let mut outer_receiver = UnboundedReceiverStream::new(outer_rx);
@@ -65,6 +77,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
             println!("{:?}", message);
         }
 
-        let _ = handle.await?;
+        let h = handle.await;
+        match h {
+            Ok(_) => {
+                continue;
+            }
+            Err(e) => {
+                bail!(e);
+            }
+        }
     }
 }

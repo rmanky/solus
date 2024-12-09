@@ -9,6 +9,7 @@ pub mod gemini;
 pub mod composer;
 pub mod flux;
 pub mod proto;
+pub mod brave;
 
 pub fn get_connection() -> Connection {
     match Connection::open("./history.db3") {

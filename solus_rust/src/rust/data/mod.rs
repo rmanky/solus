@@ -11,6 +11,7 @@ pub struct CommandData {
     pub connection: Mutex<Connection>,
     pub replicate_token: String,
     pub gemini_token: String,
+    pub brave_token: String,
 }
 
 pub async fn setup(command_data: &CommandData) -> Result<()> {
