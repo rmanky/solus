@@ -2,14 +2,15 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use data::CommandData;
+use proto::message::ContentPb;
 use rusqlite::Connection;
 
-pub mod data;
-pub mod gemini;
-pub mod composer;
-pub mod flux;
-pub mod proto;
 pub mod brave;
+pub mod composer;
+pub mod data;
+pub mod flux;
+pub mod gemini;
+pub mod proto;
 
 pub fn get_connection() -> Connection {
     match Connection::open("./history.db3") {

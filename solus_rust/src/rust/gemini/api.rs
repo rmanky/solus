@@ -1,16 +1,10 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, vec};
 
 use crate::proto::message::{
-    ContentPb,
-    FunctionDeclarationPb,
-    FunctionParameterPb,
-    FunctionParametersPb,
-    GeminiRequestPb,
-    PartPb,
-    SystemInstructionPb,
-    ToolPb,
+    ContentPb, FunctionDeclarationPb, FunctionParameterPb, FunctionParametersPb, GeminiRequestPb,
+    PartPb, SystemInstructionPb, ToolPb,
 };
-use serde::{ Deserialize, Serialize };
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GeminiRequest {
@@ -109,65 +103,13 @@ pub fn new_gemini_request_pb(contents: Vec<ContentPb>) -> GeminiRequestPb {
         system_instruction: Some(SystemInstructionPb {
             parts: vec![PartPb {
                 text: Some(
-                    "You are Solus. \
-                    Your primary goals are to provide accurate and comprehensive information, minimize hallucinations, and be informative and helpful. \
-                    Always strive for truthfulness, back up your claims with evidence, and avoid generating information not supported by the context or your training data. \
-                    When unsure about something, utilize your vast knowledge base and the provided context to reason through the question and deduce a plausible answer. \
-                    Ground your responses in evidence from your knowledge base and the provided context. \
-                    Prioritize authoritative sources, cross-reference information when possible, and be cautious with generalizations and assumptions. \
-                    Maintain a critical mindset, scrutinize your outputs, and clearly distinguish between facts and opinions. \
-                    Your ultimate purpose is to assist users by providing reliable and truthful information. \
-                    If the user's question requires information on current events, real-time data, or recent developments (e.g., news, stock prices, weather), invoke the `web_search` function with an appropriate query. \
-                    Do not instruct the user to search for the information themselves.
-                    ".to_string()
+                    "You are Solus, an intelligent conversational assistant. Your primary goal is to engage in natural and helpful conversations with users. Do not include any prefix or identifier (like 'Solus:') at the beginning of your responses. Respond directly with the information or answer to the user's question."
+                    .to_string(),
                 ),
                 function_call: None,
                 function_response: None,
             }],
         }),
-        tools: vec![ToolPb {
-            function_declarations: vec![
-                FunctionDeclarationPb {
-                    name: GENERATE_IMAGE.to_string(),
-                    description: "Generates an image based on the provided text prompt. \
-                    The function leverages advanced AI techniques to create visually appealing and relevant images. \
-                    The function returns an image that will be displayed to the user. \
-                    ".to_string(),
-                    parameters: Some(FunctionParametersPb {
-                        r#type: "object".to_string(),
-                        properties: HashMap::from([
-                            (
-                                "prompt".to_string(),
-                                FunctionParameterPb {
-                                    r#type: "string".to_string(),
-                                    description: "The prompt to use for generating the image. \
-                                If the prompt provided by the user lacks details, enhance the prompt. \
-                                Do not ask the user for a new prompt. \
-                                ".to_string(),
-                                },
-                            ),
-                        ]),
-                        required: vec!["prompt".to_string()],
-                    }),
-                },
-                FunctionDeclarationPb {
-                    name: BRAVE_SEARCH.to_string(),
-                    description: "Search the web for up to date information.".to_string(),
-                    parameters: Some(FunctionParametersPb {
-                        r#type: "object".to_string(),
-                        properties: HashMap::from([
-                            (
-                                "query".to_string(),
-                                FunctionParameterPb {
-                                    r#type: "string".to_string(),
-                                    description: "Query used to search the web.".to_string(),
-                                },
-                            ),
-                        ]),
-                        required: vec!["query".to_string()],
-                    }),
-                }
-            ],
-        }],
+        tools: vec![],
     }
 }
